@@ -3,6 +3,7 @@ package im_server
 import (
 	im_user "IM-System/im-user"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -61,6 +62,28 @@ func (s *Server) Handler(conn net.Conn) {
 
 	// 调用广播方法，去发送消息。
 	s.BroadCast(user, "is online, come chat!!!")
+
+	go func() {
+		for {
+			buf := make([]byte, 4096)
+			n, err := conn.Read(buf)
+			if n == 0 {
+				s.BroadCast(user, "is offline...")
+				return
+			}
+
+			if err != nil && err != io.EOF {
+				fmt.Println("receive client msg error:", err)
+				continue
+			}
+
+			// 去除最后的\n字符
+			revicedMsg := string(buf[:n-1])
+
+			// 将用户发送的消息进行广播。（感觉有点像群聊）
+			s.BroadCast(user, revicedMsg)
+		}
+	}()
 	select {}
 }
 
