@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net"
 )
 
@@ -44,7 +45,19 @@ func (u *User) Offline() {
 }
 
 func (u *User) DoMessage(msg string) {
-	u.Server.BroadCast(u, msg)
+	if msg == "who" {
+		replayMsg := ""
+		for name, _ := range u.Server.OnlineMap {
+			if u.Name != name {
+				userList := fmt.Sprintf("[%s] is online... \n", name)
+				replayMsg += userList
+			}
+		}
+		u.Conn.Write([]byte(replayMsg))
+	} else {
+		u.Server.BroadCast(u, msg)
+	}
+
 }
 func (u *User) ListenerMsg() {
 	for {
