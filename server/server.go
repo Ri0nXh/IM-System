@@ -1,7 +1,6 @@
-package im_server
+package server
 
 import (
-	im_user "IM-System/im-user"
 	"fmt"
 	"io"
 	"net"
@@ -16,7 +15,7 @@ Msg 是一个接收消息并实现全局广播
 type Server struct {
 	Ip        string
 	Port      int
-	OnlineMap map[string]*im_user.User
+	OnlineMap map[string]*User
 	Lock      sync.RWMutex
 	Msg       chan string
 }
@@ -26,7 +25,7 @@ func NewServer(ip string, port int) *Server {
 	s := &Server{
 		Ip:        ip,
 		Port:      port,
-		OnlineMap: make(map[string]*im_user.User),
+		OnlineMap: make(map[string]*User),
 		Msg:       make(chan string),
 	}
 	return s
@@ -55,13 +54,11 @@ func (s *Server) Start() {
 // 用户业务处理
 func (s *Server) Handler(conn net.Conn) {
 	// 初始化用户信息，并加入onlinemap中
-	user := im_user.NewUser(conn)
-	s.Lock.Lock()
-	s.OnlineMap[conn.RemoteAddr().String()] = user
-	s.Lock.Unlock()
+	user := NewUser(conn, s)
 
 	// 调用广播方法，去发送消息。
-	s.BroadCast(user, "is online, come chat!!!")
+	//s.BroadCast(user, "is online, come chat!!!")
+	user.Online()
 
 	go func() {
 		for {
@@ -69,6 +66,7 @@ func (s *Server) Handler(conn net.Conn) {
 			n, err := conn.Read(buf)
 			if n == 0 {
 				s.BroadCast(user, "is offline...")
+				user.Offline()
 				return
 			}
 
@@ -81,14 +79,15 @@ func (s *Server) Handler(conn net.Conn) {
 			revicedMsg := string(buf[:n-1])
 
 			// 将用户发送的消息进行广播。（感觉有点像群聊）
-			s.BroadCast(user, revicedMsg)
+			//s.BroadCast(user, revicedMsg)
+			user.DoMessage(revicedMsg)
 		}
 	}()
 	select {}
 }
 
 // 广播消息发送者
-func (s *Server) BroadCast(u *im_user.User, msg string) {
+func (s *Server) BroadCast(u *User, msg string) {
 	sendMsg := fmt.Sprintf("[%s] %s\n", u.Addr, msg)
 	s.Msg <- sendMsg
 }
