@@ -17,3 +17,9 @@
 其实有些像群聊功能。
 
 ![img.png](img/version3_img.png)
+
+- **服务端版本已经结束了**
+
+下图是整理的运行流程图
+
+![img.png](img/server_msg_flow.png)

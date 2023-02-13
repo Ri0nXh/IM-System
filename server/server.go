@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 // 定义一个server结构体
@@ -60,12 +61,14 @@ func (s *Server) Handler(conn net.Conn) {
 	//s.BroadCast(user, "is online, come chat!!!")
 	user.Online()
 
+	// 定义了一个检测指针
+	isLive := make(chan struct{})
+
 	go func() {
 		for {
 			buf := make([]byte, 4096)
 			n, err := conn.Read(buf)
 			if n == 0 {
-				s.BroadCast(user, "is offline...")
 				user.Offline()
 				return
 			}
@@ -83,7 +86,17 @@ func (s *Server) Handler(conn net.Conn) {
 			user.DoMessage(revicedMsg)
 		}
 	}()
-	select {}
+	for {
+		select {
+		case <-isLive:
+		case <-time.After(time.Second * 10):
+			SendMsg("timeout!, you offline!", user)
+			delete(s.OnlineMap, user.Name)
+			close(user.Msg)
+			conn.Close()
+			return
+		}
+	}
 }
 
 // 广播消息发送者
@@ -95,7 +108,10 @@ func (s *Server) BroadCast(u *User, msg string) {
 // 时刻监听服务端发送过来的消息（消息接收者）
 func (s *Server) ListenMessager() {
 	for {
-		msg := <-s.Msg
+		msg, ok := <-s.Msg
+		if !ok {
+			fmt.Println("server chan is closed!")
+		}
 		s.Lock.Lock()
 		for _, userInfo := range s.OnlineMap {
 			userInfo.Msg <- msg

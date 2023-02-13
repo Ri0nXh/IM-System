@@ -103,8 +103,12 @@ func (u *User) DoMessage(msg string) {
 }
 func (u *User) ListenerMsg() {
 	for {
-		msg := <-u.Msg
-		u.Conn.Write([]byte(msg))
+		msg, ok := <-u.Msg
+		if !ok {
+			fmt.Println("user chan is close!")
+		} else {
+			u.Conn.Write([]byte(msg))
+		}
 	}
 }
 
