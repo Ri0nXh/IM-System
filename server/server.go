@@ -88,7 +88,7 @@ func (s *Server) Handler(conn net.Conn) {
 
 // 广播消息发送者
 func (s *Server) BroadCast(u *User, msg string) {
-	sendMsg := fmt.Sprintf("[%s] %s\n", u.Addr, msg)
+	sendMsg := fmt.Sprintf("[%s] %s\n", u.Name, msg)
 	s.Msg <- sendMsg
 }
 
