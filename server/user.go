@@ -106,6 +106,7 @@ func (u *User) ListenerMsg() {
 		msg, ok := <-u.Msg
 		if !ok {
 			fmt.Println("user chan is close!")
+			return
 		} else {
 			u.Conn.Write([]byte(msg))
 		}
